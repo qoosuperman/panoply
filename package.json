@@ -1,0 +1,23 @@
+{
+  "name": "panoply",
+  "version": "1.0.0",
+  "description": "panoply",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qoosuperman/panoply.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/qoosuperman/panoply/issues"
+  },
+  "homepage": "https://github.com/qoosuperman/panoply#readme",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
