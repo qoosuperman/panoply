@@ -4,7 +4,8 @@
   "description": "panoply",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "start:dev": "nodemon src/index.ts --exec 'ts-node' -e ts"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
   },
   "homepage": "https://github.com/qoosuperman/panoply#readme",
   "devDependencies": {
+    "nodemon": "^3.0.3",
     "typescript": "^5.3.3"
   }
 }
