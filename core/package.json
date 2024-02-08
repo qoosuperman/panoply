@@ -1,0 +1,25 @@
+{
+  "name": "panoply",
+  "version": "1.0.0",
+  "description": "panoply",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start:dev": "nodemon src/index.ts --exec 'ts-node' -e ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qoosuperman/panoply.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/qoosuperman/panoply/issues"
+  },
+  "homepage": "https://github.com/qoosuperman/panoply#readme",
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "typescript": "^5.3.3"
+  }
+}
