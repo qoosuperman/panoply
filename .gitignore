@@ -1,6 +1,9 @@
-node_modules/
-dist/
-.env
+core/node_modules/
+core/dist/
+server/node_modules/
+server/dist/
+core/.env
+server/.env
 .DS_Store
 .vscode/
 tmp/
