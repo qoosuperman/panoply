@@ -4,7 +4,8 @@
   "description": "panoply",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
+    "test": "pnpm build && node --test",
     "start:dev": "nodemon src/index.ts --exec 'ts-node' -e ts"
   },
   "repository": {
@@ -19,6 +20,7 @@
   },
   "homepage": "https://github.com/qoosuperman/panoply#readme",
   "devDependencies": {
+    "@types/node": "^20.11.17",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.56.0",
