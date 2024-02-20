@@ -7,7 +7,12 @@
     "build": "rm -rf dist && tsc",
     "test": "pnpm build && node --test",
     "start:dev": "nodemon src/index.ts --exec 'ts-node' -e ts",
-    "format": "prettier --config .prettierrc.json 'src/**/*.ts' --write"
+    "lint": "eslint src/**/*.ts",
+    "format": "eslint src/**/*.ts --fix",
+    "prepare": "cd .. && husky core/.husky"
+  },
+  "lint-staged": {
+    "src/**/*.ts": "eslint .eslintrc.js"
   },
   "repository": {
     "type": "git",
