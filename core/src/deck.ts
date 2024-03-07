@@ -5,8 +5,16 @@ import { Card } from "./card";
 export class Deck {
   protected _cards: Card[];
 
-  constructor(cards: Card[]) {
-    this._cards = cards;
+  constructor()
+
+  constructor(cards: Card[])
+
+  constructor(cards?: Card[]) {
+    if (cards) {
+      this._cards = cards;
+    } else {
+      this._cards = [];
+    }
   }
 
   get level() {
