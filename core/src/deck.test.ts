@@ -34,4 +34,16 @@ test("Deck", async (t) => {
       assert.deepStrictEqual(context.deck.size, 2);
     });
   });
+
+  await t.test("add", async (t) => {
+    const card1 = new Card(1, 0, new MonetaryValue("red", 1), new MonetaryValue().add("blue", 1).add("white", 1).add("red", 4));
+    const deck = new Deck([card1]);
+
+    await t.test("add", async () => {
+      const card2 = new Card(1, 1, new MonetaryValue("yellow", 1), new MonetaryValue().add("blue", 1).add("white", 1).add("yelloe", 4));
+      deck.add(card2);
+      assert.deepStrictEqual(deck.size, 2);
+      assert.deepStrictEqual(deck.draw().cost, card2.cost);
+    });
+  });
 });

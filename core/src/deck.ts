@@ -28,4 +28,12 @@ export class Deck {
   draw() {
     return this._cards.pop() as Card;
   }
+
+  first(): Card {
+    return this._cards[0]
+  }
+
+  add(card: Card) {
+    this._cards.push(card);
+  }
 }
