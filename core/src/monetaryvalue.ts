@@ -5,6 +5,8 @@
  */
 export type MonetaryDenominations = InstanceType<typeof Map<string, number>>;
 
+export const MonetaryColors = ["red", "blue", "green", "white", "black", "gold"];
+
 /**
  * MonetaryValue represents a composite value that can be used to describe
  * and compare financial figures such as cost and purchasing power.
