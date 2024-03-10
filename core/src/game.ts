@@ -8,19 +8,19 @@ import { Noble } from "./noble";
 import { Player } from "./player";
 
 export default class Game {
-  events: GameEvent[] = []
+  events: GameEvent[] = [];
 
-  players: Player[] = []
+  players: Player[] = [];
 
-  decks: Deck[] = []
+  decks: Deck[] = [];
 
-  faceUpCards: Card[] = []
+  faceUpCards: Card[] = [];
 
-  currentPlayerIndex: number = 0
+  currentPlayerIndex: number = 0;
 
-  tokens: MonetaryValue = new MonetaryValue()
+  tokens: MonetaryValue = new MonetaryValue();
 
-  nobles: Noble[] = []
+  nobles: Noble[] = [];
 
   constructor(events: GameEvent[]);
 
@@ -30,45 +30,46 @@ export default class Game {
     if (Array.isArray(playersCountOrEvents)) {
       // TODO
       // this.applyEvents(playersCountOrEvents)
-      return
+      return;
     }
 
     if (componentSet) {
       // TODO: validation on cards / nobles / tokens
-      const cards = componentSet.cards
-      const tokens = componentSet.tokens
-      const nobles = componentSet.nobles
-      const event = new GameCreatedEvent(playersCountOrEvents, tokens, nobles, cards)
+      const cards = componentSet.cards;
+      const tokens = componentSet.tokens;
+      const nobles = componentSet.nobles;
+      const event = new GameCreatedEvent(playersCountOrEvents, tokens, nobles, cards);
 
-      this.events.push(event)
-      this.handleCreatedGameEvent(event)
+      this.events.push(event);
+      this.handleCreatedGameEvent(event);
     }
   }
 
   handleCreatedGameEvent(event: GameCreatedEvent) {
-    this.players = new Array(event.playersCount).fill(new Player())
-    this.tokens = event.tokens
+    this.players = new Array(event.playersCount).fill(new Player());
+    this.tokens = event.tokens;
     event.nobles.forEach((noble) => {
-      this.nobles.push(noble)
-    })
+      this.nobles.push(noble);
+    });
 
-    const deck1 = new Deck()
-    const deck2 = new Deck()
-    const deck3 = new Deck()
+    const deck1 = new Deck();
+    const deck2 = new Deck();
+    const deck3 = new Deck();
+    // TODO: deck shuffle logic
     event.cards.forEach((card) => {
       switch (card.level) {
         case 1:
-          deck1.add(card)
+          deck1.add(card);
           break;
         case 2:
-          deck2.add(card)
+          deck2.add(card);
           break;
         case 3:
-          deck3.add(card)
+          deck3.add(card);
           break;
       }
-    })
-    this.decks = [deck1, deck2, deck3]
-    this.faceUpCards = [deck1.first(), deck2.first(), deck3.first()]
+    });
+    this.decks = [deck1, deck2, deck3];
+    this.faceUpCards = [deck1.first(), deck2.first(), deck3.first()];
   }
 }

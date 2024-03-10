@@ -4,16 +4,16 @@ import { Noble } from "../noble";
 import { GameEvent } from "./gameevent";
 
 export class GameCreatedEvent extends GameEvent {
-  playersCount: number
-  tokens: MonetaryValue
-  nobles: Noble[]
-  cards: Card[]
+  playersCount: number;
+  tokens: MonetaryValue;
+  nobles: Noble[];
+  cards: Card[];
 
   constructor(playersCount: number, tokens: MonetaryValue, nobles: Noble[], cards: Card[]) {
-    super()
-    this.playersCount = playersCount
-    this.tokens = tokens
-    this.nobles = nobles
-    this.cards = cards
+    super();
+    this.playersCount = playersCount;
+    this.tokens = tokens;
+    this.nobles = nobles;
+    this.cards = cards;
   }
 }

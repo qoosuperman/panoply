@@ -5,9 +5,9 @@ import { Card } from "./card";
 export class Deck {
   protected _cards: Card[];
 
-  constructor()
+  constructor();
 
-  constructor(cards: Card[])
+  constructor(cards: Card[]);
 
   constructor(cards?: Card[]) {
     if (cards) {
@@ -30,7 +30,7 @@ export class Deck {
   }
 
   first(): Card {
-    return this._cards[0]
+    return this._cards[0];
   }
 
   add(card: Card) {
