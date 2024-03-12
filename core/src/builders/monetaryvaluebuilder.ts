@@ -1,10 +1,14 @@
 import { MonetaryColors, MonetaryDenominations, MonetaryValue } from "../monetaryvalue";
 
-export class MonetaryValueFactory {
-  private static denominations: string[] = MonetaryColors;
-  private static md: MonetaryDenominations = new Map();
+export class MonetaryValueBuilder {
+  private denominations: string[] = MonetaryColors;
+  private md: MonetaryDenominations = new Map();
 
-  static with3RandomColorDenominations(): typeof MonetaryValueFactory {
+  build(): MonetaryValue {
+    return new MonetaryValue(this.md);
+  }
+
+  with3RandomColorDenominations(): MonetaryValueBuilder {
     const shuffled = this.denominations.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 3);
 
@@ -16,14 +20,10 @@ export class MonetaryValueFactory {
     return this;
   }
 
-  static with1RandomColorDenomination(): typeof MonetaryValueFactory {
+  with1RandomColorDenomination(): MonetaryValueBuilder {
     const randomIndex = Math.floor(Math.random() * this.denominations.length);
     const randomValue = Math.floor(Math.random() * 10);
     this.md.set(this.denominations[randomIndex], randomValue);
     return this;
-  }
-
-  static apply(): MonetaryValue {
-    return new MonetaryValue(this.md);
   }
 }
