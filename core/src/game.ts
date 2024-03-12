@@ -28,8 +28,7 @@ export default class Game {
 
   constructor(playersCountOrEvents: number | GameEvent[], componentSet?: ComponentSet) {
     if (Array.isArray(playersCountOrEvents)) {
-      // TODO
-      // this.applyEvents(playersCountOrEvents)
+      this.applyEvents(playersCountOrEvents)
       return;
     }
 
@@ -43,6 +42,15 @@ export default class Game {
       this.events.push(event);
       this.handleCreatedGameEvent(event);
     }
+  }
+
+  applyEvents(events: GameEvent[]) {
+    events.forEach((event) => {
+      if (event instanceof GameCreatedEvent) {
+        this.handleCreatedGameEvent(event)
+      }
+      this.events.push(event);
+    })
   }
 
   handleCreatedGameEvent(event: GameCreatedEvent) {
