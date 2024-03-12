@@ -28,7 +28,7 @@ export default class Game {
 
   constructor(playersCountOrEvents: number | GameEvent[], componentSet?: ComponentSet) {
     if (Array.isArray(playersCountOrEvents)) {
-      this.applyEvents(playersCountOrEvents)
+      this.applyEvents(playersCountOrEvents);
       return;
     }
 
@@ -47,10 +47,10 @@ export default class Game {
   applyEvents(events: GameEvent[]) {
     events.forEach((event) => {
       if (event instanceof GameCreatedEvent) {
-        this.handleCreatedGameEvent(event)
+        this.handleCreatedGameEvent(event);
       }
       this.events.push(event);
-    })
+    });
   }
 
   handleCreatedGameEvent(event: GameCreatedEvent) {

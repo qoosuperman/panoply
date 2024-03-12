@@ -8,7 +8,8 @@ test("Game", async (t) => {
   await t.test("constructor", async (t) => {
     await t.test("with playersCount and componentSet arguments", async () => {
       const playersCount = 4;
-      const componentSet = new ComponentSetBuilder().withNoblesCount(3)
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
         .withCardsCountEveryLevel(3)
         .withTokensCount(5)
         .build();
@@ -40,7 +41,8 @@ test("Game", async (t) => {
     });
 
     await t.test("with events argument", async () => {
-      const componentSet = new ComponentSetBuilder().withNoblesCount(2)
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(2)
         .withCardsCountEveryLevel(2)
         .withTokensCount(4)
         .build();
