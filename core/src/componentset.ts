@@ -5,7 +5,7 @@ import { Noble } from "./noble";
 export class ComponentSet {
   cards: Card[];
   nobles: Noble[];
-  _tokens: MonetaryValue;
+  private _tokens: MonetaryValue;
 
   constructor(cards: Card[], nobles: Noble[], tokens: MonetaryValue) {
     this.cards = cards;
