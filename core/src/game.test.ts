@@ -21,7 +21,7 @@ test("Game", async (t) => {
       assert.equal(game.players.length, playersCount);
       // decks
       for (let i = 0; i < game.decks.length; i++) {
-        assert.equal(game.decks[i].first().level, i + 1);
+        assert.equal(game.decks[i].first.level, i + 1);
       }
       // faceUpCards
       for (let i = 0; i < game.faceUpCards.length; i++) {
@@ -54,7 +54,7 @@ test("Game", async (t) => {
       assert.equal(game.players.length, 3);
       // decks
       for (let i = 0; i < game.decks.length; i++) {
-        assert.equal(game.decks[i].first().level, i + 1);
+        assert.equal(game.decks[i].first.level, i + 1);
       }
       // faceUpCards
       for (let i = 0; i < game.faceUpCards.length; i++) {

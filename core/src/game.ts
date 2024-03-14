@@ -78,6 +78,6 @@ export default class Game {
       }
     });
     this.decks = [deck1, deck2, deck3];
-    this.faceUpCards = [deck1.first(), deck2.first(), deck3.first()];
+    this.faceUpCards = [deck1.first, deck2.first, deck3.first];
   }
 }
