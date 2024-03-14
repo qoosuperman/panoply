@@ -31,7 +31,7 @@ export class ComponentSetBuilder {
   }
 
   withTokensCount(tokensCount: number): ComponentSetBuilder {
-    const colorsMap: MonetaryDenominations = MonetaryColors.reduce((map, color) => {
+    const colorsMap: MonetaryDenominations = Object.values(MonetaryColors).reduce((map, color) => {
       map.set(color, tokensCount);
       return map;
     }, new Map<string, number>());

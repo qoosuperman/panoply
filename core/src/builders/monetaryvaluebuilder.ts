@@ -1,7 +1,7 @@
 import { MonetaryColors, MonetaryDenominations, MonetaryValue } from "../monetaryvalue";
 
 export class MonetaryValueBuilder {
-  private denominations: string[] = MonetaryColors;
+  private denominations: string[] = Object.values(MonetaryColors);
   private md: MonetaryDenominations = new Map();
 
   build(): MonetaryValue {

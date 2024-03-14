@@ -5,7 +5,14 @@
  */
 export type MonetaryDenominations = InstanceType<typeof Map<string, number>>;
 
-export const MonetaryColors = ["red", "blue", "green", "white", "black", "gold"];
+export enum MonetaryColors {
+  RED = "red",
+  BLUE = "blue",
+  GREEN = "green",
+  WHITE = "white",
+  BLACK = "black",
+  GOLD = "gold"
+}
 
 /**
  * MonetaryValue represents a composite value that can be used to describe
