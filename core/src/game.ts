@@ -1,11 +1,21 @@
 import { Card } from "./card";
 import { ComponentSet } from "./componentset";
 import { Deck } from "./deck";
+import {
+  InvalidDrawTokenAmount,
+  InvalidGameCommand,
+  InvalidMultiDrawToken,
+  InvalidOverdrawToken,
+  InvalidPlayOrder,
+  InvalidTurnCommand,
+} from "./error";
 import { GameCreatedEvent } from "./events/gamecreatedevent";
 import { GameEvent } from "./events/gameevent";
+import { TakeTokenEvent } from "./events/taketoken";
 import { MonetaryValue } from "./monetaryvalue";
 import { Noble } from "./noble";
 import { Player } from "./player";
+import { TurnState } from "./turnstate";
 
 export default class Game {
   events: GameEvent[] = [];
@@ -21,6 +31,8 @@ export default class Game {
   tokens: MonetaryValue = new MonetaryValue();
 
   nobles: Noble[] = [];
+
+  private turnState: TurnState = TurnState.Action;
 
   constructor(events: GameEvent[]);
 
@@ -48,6 +60,10 @@ export default class Game {
     events.forEach((event) => {
       if (event instanceof GameCreatedEvent) {
         this.handleCreatedGameEvent(event);
+      } else if (event instanceof TakeTokenEvent) {
+        this.handleTakeTokenEvent(event);
+      } else {
+        throw new Error(`Unknown game event ${event}`);
       }
       this.events.push(event);
     });
@@ -75,5 +91,61 @@ export default class Game {
              .map(([, deck]) => deck);
 
     this.faceUpCards = this.decks.map((deck) => deck.draw(4)).filter((card) => card !== undefined) as Card[];
+  }
+
+  takeTokens(player: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
+    // Cannot take an action out of turn
+    if (this.currentPlayerIndex !== player) {
+      return new InvalidPlayOrder();
+    }
+
+    // Cannot take an action when it is not an action phase
+    if (this.turnState !== TurnState.Action) {
+      return new InvalidTurnCommand();
+    }
+
+    // Cannot take more than exists in the bank
+    if (!this.tokens.contains(tokens)) {
+      return new InvalidOverdrawToken();
+    }
+
+    // Cannot draw more than three tokens
+    // TODO: Generalize this limit with a RuleSet
+    if (tokens.size > 3) {
+      return new InvalidDrawTokenAmount();
+    }
+
+    // Cannot draw multiple tokens of the same color while also drawing other tokens
+    // TODO: Generalize this limit with a RuleSet
+    if (tokens.size > 2 && tokens.byColor().filter((mv) => mv.size > 1).length > 0) {
+      return new InvalidDrawTokenAmount();
+    }
+
+    // Cannot draw multiple tokens from a piler smaller than four
+    // TODO: Generalize this limit with a RuleSet
+    if (tokens.byColor().some((mv) => !this.tokens.contains(new MonetaryValue(mv.value.keys().next().value, 4)))) {
+      return new InvalidMultiDrawToken();
+    }
+
+    // TODO: Logic for Gold / "Universal" tokens
+
+    const event = new TakeTokenEvent(player, tokens);
+
+    this.events.push(event);
+    this.handleTakeTokenEvent(event);
+  }
+
+  handleTakeTokenEvent(event: TakeTokenEvent) {
+    const player = this.players[event.player];
+
+    player.tokens = player.tokens.add(event.tokens);
+    this.tokens = this.tokens.subtract(event.tokens);
+
+    // TODO: Generalize this limit with a RuleSet
+    if (player.tokens.size > 10) {
+      this.turnState = TurnState.ReturnTokens;
+    } else {
+      this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+    }
   }
 }
