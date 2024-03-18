@@ -56,9 +56,7 @@ export default class Game {
   handleCreatedGameEvent(event: GameCreatedEvent) {
     this.players = new Array(event.playersCount).fill(new Player());
     this.tokens = event.tokens;
-    event.nobles.forEach((noble) => {
-      this.nobles.push(noble);
-    });
+    this.nobles = [...event.nobles];
 
     const deck1 = new Deck();
     const deck2 = new Deck();
