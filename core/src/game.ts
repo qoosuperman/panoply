@@ -58,24 +58,22 @@ export default class Game {
     this.tokens = event.tokens;
     this.nobles = [...event.nobles];
 
-    const deck1 = new Deck();
-    const deck2 = new Deck();
-    const deck3 = new Deck();
-    // TODO: deck shuffle logic
+    const decksByLevel = new Map<number, Deck>();
     event.cards.forEach((card) => {
-      switch (card.level) {
-        case 1:
-          deck1.add(card);
-          break;
-        case 2:
-          deck2.add(card);
-          break;
-        case 3:
-          deck3.add(card);
-          break;
+      if (!decksByLevel.has(card.level)) {
+        decksByLevel.set(card.level, new Deck())
+      }
+
+      const deck = decksByLevel.get(card.level);
+      if (deck) {
+        deck.add(card);
       }
     });
-    this.decks = [deck1, deck2, deck3];
-    this.faceUpCards = [deck1.first, deck2.first, deck3.first];
+
+    this.decks = Array.from(decksByLevel.entries())
+             .sort(([levelA, ], [levelB, ]) => levelA - levelB)
+             .map(([, deck]) => deck);
+
+    this.faceUpCards = this.decks.map((deck) => deck.draw(4)).filter((card) => card !== undefined) as Card[];
   }
 }
