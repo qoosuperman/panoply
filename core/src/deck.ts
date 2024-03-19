@@ -5,8 +5,16 @@ import { Card } from "./card";
 export class Deck {
   protected _cards: Card[];
 
-  constructor(cards: Card[]) {
-    this._cards = cards;
+  constructor();
+
+  constructor(cards: Card[]);
+
+  constructor(cards?: Card[]) {
+    if (cards) {
+      this._cards = cards;
+    } else {
+      this._cards = [];
+    }
   }
 
   get level() {
@@ -17,7 +25,22 @@ export class Deck {
     return this._cards.length;
   }
 
-  draw() {
-    return this._cards.pop() as Card;
+  get first(): Card {
+    return this._cards[this._cards.length - 1];
+  }
+
+  draw(n?: number): Card | Card[] | undefined {
+    n = n || 1;
+    if (this._cards.length < n) {
+      return undefined;
+    }
+    if (n === 1) {
+      return this._cards.pop();
+    }
+    return this._cards.splice(-n, n);
+  }
+
+  add(card: Card) {
+    this._cards.push(card);
   }
 }
