@@ -32,7 +32,7 @@ export default class Game {
 
   nobles: Noble[] = [];
 
-  private turnState: TurnState = TurnState.Action;
+  turnState: TurnState = TurnState.Action;
 
   constructor(events: GameEvent[]);
 
@@ -70,14 +70,14 @@ export default class Game {
   }
 
   handleCreatedGameEvent(event: GameCreatedEvent) {
-    this.players = new Array(event.playersCount).fill(new Player());
+    this.players = [...new Array(event.playersCount)].map(() => new Player());
     this.tokens = event.tokens;
     this.nobles = [...event.nobles];
 
     const decksByLevel = new Map<number, Deck>();
     event.cards.forEach((card) => {
       if (!decksByLevel.has(card.level)) {
-        decksByLevel.set(card.level, new Deck())
+        decksByLevel.set(card.level, new Deck());
       }
 
       const deck = decksByLevel.get(card.level);
@@ -87,8 +87,8 @@ export default class Game {
     });
 
     this.decks = Array.from(decksByLevel.entries())
-             .sort(([levelA, ], [levelB, ]) => levelA - levelB)
-             .map(([, deck]) => deck);
+      .sort(([levelA], [levelB]) => levelA - levelB)
+      .map(([, deck]) => deck);
 
     this.faceUpCards = this.decks.map((deck) => deck.draw(4)).filter((card) => card !== undefined) as Card[];
   }
@@ -115,16 +115,25 @@ export default class Game {
       return new InvalidDrawTokenAmount();
     }
 
-    // Cannot draw multiple tokens of the same color while also drawing other tokens
-    // TODO: Generalize this limit with a RuleSet
-    if (tokens.size > 2 && tokens.byColor().filter((mv) => mv.size > 1).length > 0) {
-      return new InvalidDrawTokenAmount();
-    }
+    // Rules specific for duplicate color draws
+    const duplicateColors = tokens.byColor().filter((mv) => mv.size > 1);
+    if (duplicateColors.length > 1) {
+      // Cannot draw multiple tokens of the same color while also drawing other tokens
+      // TODO: Generalize this limit with a RuleSet
+      if (tokens.size > 2) {
+        return new InvalidDrawTokenAmount();
+      }
 
-    // Cannot draw multiple tokens from a piler smaller than four
-    // TODO: Generalize this limit with a RuleSet
-    if (tokens.byColor().some((mv) => !this.tokens.contains(new MonetaryValue(mv.value.keys().next().value, 4)))) {
-      return new InvalidMultiDrawToken();
+      // Cannot draw multiple tokens from a pile smaller than four
+      // TODO: Generalize this limit with a RuleSet
+      for (let monetaryValue of duplicateColors) {
+        // TODO: Think about how to make this less awkard.
+        const color = monetaryValue.value.keys().next().value;
+
+        if (!this.tokens.contains(new MonetaryValue(color, 4))) {
+          return new InvalidMultiDrawToken();
+        }
+      }
     }
 
     // TODO: Logic for Gold / "Universal" tokens
