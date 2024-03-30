@@ -7,6 +7,13 @@ import { TakeTokenEvent } from "./events/taketoken";
 import { MonetaryValue } from "./monetaryvalue";
 import { ComponentSet } from "./componentset";
 import { TurnState } from "./turnstate";
+import {
+  InvalidDrawTokenAmount,
+  InvalidMultiDrawToken,
+  InvalidOverdrawToken,
+  InvalidPlayOrder,
+  InvalidTurnCommand,
+} from "./error";
 
 test("Game", async (t) => {
   await t.test("constructor", async (t) => {
@@ -122,6 +129,99 @@ test("Game", async (t) => {
 
       assert.equal(game.currentPlayerIndex, 1);
       assert.equal(game.turnState, TurnState.Action);
+    });
+  });
+
+  await t.test("takeTokens", async (t) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const assertInstance = (instance: any, clazz: any) => {
+      assert.ok(
+        instance instanceof clazz,
+        `Expected instance of ${clazz.name}, but got ${instance?.constructor?.name}`,
+      );
+    };
+
+    await t.test("successfully performs a legal draw from different piles", () => {
+      const game = new Game(
+        2,
+        new ComponentSet([], [], new MonetaryValue().add("green", 3).add("blue", 3).add("red", 3)),
+      );
+      const result = game.takeTokens(0, new MonetaryValue().add("green", 1).add("blue", 1).add("red", 1));
+
+      assert.equal(result, undefined);
+    });
+
+    await t.test("successfully performs a legal draw from a single pile", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 5)));
+      const result = game.takeTokens(0, new MonetaryValue().add("green", 2));
+
+      assert.equal(result, undefined);
+    });
+
+    await t.test("generates a TakeTokenEvent", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 5)));
+      game.takeTokens(0, new MonetaryValue().add("green", 2));
+
+      assertInstance(game.events[game.events.length - 1], TakeTokenEvent);
+    });
+
+    await t.test("applies TakeTokenEvent", (t) => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 5)));
+      const handleTakeTokenEvent = t.mock.fn();
+      game.handleTakeTokenEvent = handleTakeTokenEvent;
+      game.takeTokens(0, new MonetaryValue().add("green", 2));
+
+      assert.equal(handleTakeTokenEvent.mock.callCount(), 1);
+    });
+
+    await t.test("throws error when playing out of turn", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 1)));
+      const result = game.takeTokens(1, new MonetaryValue("green", 1));
+
+      assertInstance(result, InvalidPlayOrder);
+    });
+
+    await t.test("throws error when taking invalid action", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 1)));
+      game.turnState = TurnState.ReturnTokens;
+      const result = game.takeTokens(0, new MonetaryValue("green", 1));
+
+      assertInstance(result, InvalidTurnCommand);
+    });
+
+    await t.test("throws error when drawing more tokens than exist in the bank", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 1)));
+      const result = game.takeTokens(0, new MonetaryValue("green", 2));
+
+      assertInstance(result, InvalidOverdrawToken);
+    });
+
+    await t.test("throws error when drawing more than three tokens", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 4)));
+      const result = game.takeTokens(0, new MonetaryValue("green", 4));
+
+      assertInstance(result, InvalidDrawTokenAmount);
+    });
+
+    await t.test("throws error when drawing zero tokens", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 1)));
+      const result = game.takeTokens(0, new MonetaryValue());
+
+      assertInstance(result, InvalidDrawTokenAmount);
+    });
+
+    await t.test("throws error when drawing mixed duplicate tokens", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 2).add("red", 2)));
+      const result = game.takeTokens(0, new MonetaryValue().add("green", 2).add("red", 1));
+
+      assertInstance(result, InvalidDrawTokenAmount);
+    });
+
+    await t.test("throws error when drawing mixed duplicate tokens", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 2).add("red", 2)));
+      const result = game.takeTokens(0, new MonetaryValue().add("green", 2));
+
+      assertInstance(result, InvalidMultiDrawToken);
     });
   });
 });

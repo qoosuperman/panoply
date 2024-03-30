@@ -111,13 +111,13 @@ export default class Game {
 
     // Cannot draw more than three tokens
     // TODO: Generalize this limit with a RuleSet
-    if (tokens.size > 3) {
+    if (tokens.size > 3 || tokens.size <= 0) {
       return new InvalidDrawTokenAmount();
     }
 
     // Rules specific for duplicate color draws
     const duplicateColors = tokens.byColor().filter((mv) => mv.size > 1);
-    if (duplicateColors.length > 1) {
+    if (duplicateColors.length > 0) {
       // Cannot draw multiple tokens of the same color while also drawing other tokens
       // TODO: Generalize this limit with a RuleSet
       if (tokens.size > 2) {
@@ -126,7 +126,7 @@ export default class Game {
 
       // Cannot draw multiple tokens from a pile smaller than four
       // TODO: Generalize this limit with a RuleSet
-      for (let monetaryValue of duplicateColors) {
+      for (const monetaryValue of duplicateColors) {
         // TODO: Think about how to make this less awkard.
         const color = monetaryValue.value.keys().next().value;
 
