@@ -32,10 +32,7 @@ export class MonetaryValue {
 
   constructor(color: string, amount: number);
 
-  constructor(
-    colorOrDenominations?: string | MonetaryDenominations,
-    amount: number = 0,
-  ) {
+  constructor(colorOrDenominations?: string | MonetaryDenominations, amount: number = 0) {
     if (typeof colorOrDenominations === "string") {
       this.denominations = new Map([[colorOrDenominations, amount]]);
     } else if (colorOrDenominations instanceof Map) {
@@ -62,10 +59,7 @@ export class MonetaryValue {
    */
   add(color: string, amount: number): MonetaryValue;
 
-  add(
-    colorOrMonetaryValue: string | MonetaryValue,
-    amount: number = 0,
-  ): MonetaryValue {
+  add(colorOrMonetaryValue: string | MonetaryValue, amount: number = 0): MonetaryValue {
     const addend = this.toDenominations(colorOrMonetaryValue, amount);
     const sum = this.mergeReduce(addend, (a, b) => a + b);
 
@@ -89,10 +83,7 @@ export class MonetaryValue {
    */
   subtract(color: string, amount: number): MonetaryValue;
 
-  subtract(
-    colorOrMonetaryValue: string | MonetaryValue,
-    amount: number = 0,
-  ): MonetaryValue {
+  subtract(colorOrMonetaryValue: string | MonetaryValue, amount: number = 0): MonetaryValue {
     const subtrahend = this.toDenominations(colorOrMonetaryValue, amount);
     const difference = this.mergeReduce(subtrahend, (a, b) => a - b);
 
@@ -140,14 +131,30 @@ export class MonetaryValue {
   }
 
   /**
+   * Sum of the amounts of all colors.
+   *
+   * TODO: Consider caching this if performance becomes an issue.
+   */
+  get size(): number {
+    return [...this.denominations.values()].reduce((size, amount) => size + amount, 0);
+  }
+
+  /**
+   * The current MonetaryValue divided into individual colors.
+   *
+   * TODO: Consider caching this if performance becomes an issue.
+   * TODO: Consider if this is really necessary...
+   */
+  byColor(): MonetaryValue[] {
+    return [...this.denominations].map((d) => new MonetaryValue(d[0], d[1]));
+  }
+
+  /**
    * Coalesce the given arguments into a Map.
    *
    * This is a convenience function for the handling of polymorphic methods.
    */
-  private toDenominations(
-    colorOrMonetaryValue: string | MonetaryValue,
-    amount: number = 0,
-  ): MonetaryDenominations {
+  private toDenominations(colorOrMonetaryValue: string | MonetaryValue, amount: number = 0): MonetaryDenominations {
     if (typeof colorOrMonetaryValue === "string") {
       return new Map([[colorOrMonetaryValue, amount]]);
     }
