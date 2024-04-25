@@ -7,10 +7,12 @@ import {
   InvalidMultiDrawToken,
   InvalidOverdrawToken,
   InvalidPlayOrder,
+  InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
 import { GameCreatedEvent } from "./events/gamecreatedevent";
 import { GameEvent } from "./events/gameevent";
+import { ReturnTokenEvent } from "./events/returntoken";
 import { TakeTokenEvent } from "./events/taketoken";
 import { MonetaryValue } from "./monetaryvalue";
 import { Noble } from "./noble";
@@ -154,7 +156,51 @@ export default class Game {
     if (player.tokens.size > 10) {
       this.turnState = TurnState.ReturnTokens;
     } else {
-      this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+      // TODO: End-of-turn noble logic
+      // This can happen if a player was previously eligible for multiple nobles,
+      // but because of the one-noble-per-turn restriction was not able to take them all
+      // on the same turn.
+      this.advanceTurn();
     }
+  }
+
+  returnTokens(playerIndex: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
+    // Cannot take an action out of turn
+    if (this.currentPlayerIndex !== playerIndex) {
+      return new InvalidPlayOrder();
+    }
+
+    // Cannot return tokens when it is not a return token phase
+    if (this.turnState !== TurnState.ReturnTokens) {
+      return new InvalidTurnCommand();
+    }
+
+    // Cannot return more tokens than would bring the player's total below ten
+    const player = this.players[playerIndex];
+    if (player.tokens.subtract(tokens).size < 10) {
+      return new InvalidTokenReturn();
+    }
+
+    const event = new ReturnTokenEvent(playerIndex, tokens);
+
+    this.events.push(event);
+  }
+
+  handleReturnTokenEvent(event: ReturnTokenEvent) {
+    const player = this.players[event.player];
+
+    player.tokens = player.tokens.subtract(event.tokens);
+    this.tokens = this.tokens.add(event.tokens);
+
+    // TODO: End-of-turn noble logic
+    // This can happen if a player was previously eligible for multiple nobles,
+    // but because of the one-noble-per-turn restriction was not able to take them all
+    // on the same turn.
+    this.advanceTurn();
+  }
+
+  advanceTurn() {
+    this.turnState = TurnState.Action;
+    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
   }
 }
