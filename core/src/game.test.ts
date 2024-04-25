@@ -14,6 +14,8 @@ import {
   InvalidPlayOrder,
   InvalidTurnCommand,
 } from "./error";
+import { ReturnTokenEvent } from "./events/returntoken";
+import { Noble } from "./noble";
 
 test("Game", async (t) => {
   await t.test("constructor", async (t) => {
@@ -222,6 +224,44 @@ test("Game", async (t) => {
       const result = game.takeTokens(0, new MonetaryValue().add("green", 2));
 
       assertInstance(result, InvalidMultiDrawToken);
+    });
+  });
+
+  await t.test("handleReturnTokenEvent", async (t) => {
+    await t.test("removes tokens from the player's possession and returns them to player's collection", () => {
+      const gameTokens = new MonetaryValue().add("green", 10).add("red", 10).add("blue", 10);
+      const game = new Game(1, new ComponentSet([], [], gameTokens));
+      const player = game.players[0];
+
+      for (let i = 0; i < 4; i++) {
+        const takenTokens = new MonetaryValue().add("green", 1).add("red", 1).add("blue", 1);
+        game.takeTokens(0, takenTokens);
+      }
+
+      const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
+
+      const event = new ReturnTokenEvent(0, returnedTokens);
+
+      const expectedGameTokens = game.tokens.add(returnedTokens);
+      const expectedPlayerTokens = player.tokens.subtract(returnedTokens);
+
+      game.handleReturnTokenEvent(event);
+
+      assert.deepStrictEqual(expectedGameTokens.value, game.tokens.value);
+      assert.deepStrictEqual(expectedPlayerTokens.value, player.tokens.value);
+    });
+
+    await t.test("progresses to next player if no nobles are available", () => {
+      const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 1)));
+      const player = game.players[0];
+      player.tokens = new MonetaryValue().add("green", 13);
+
+      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+
+      game.handleReturnTokenEvent(event);
+
+      assert.deepStrictEqual(game.currentPlayerIndex, 1);
+    });
     });
   });
 });
