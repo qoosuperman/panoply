@@ -10,10 +10,10 @@ import {
   InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
-import { GameCreatedEvent } from "./events/gamecreatedevent";
+import { GameCreated } from "./events/gamecreated";
 import { GameEvent } from "./events/gameevent";
-import { ReturnTokenEvent } from "./events/returntoken";
-import { TakeTokenEvent } from "./events/taketoken";
+import { TokensReturned } from "./events/tokensreturned";
+import { TokensTaken } from "./events/tokenstaken";
 import { MonetaryValue } from "./monetaryvalue";
 import { Noble } from "./noble";
 import { Player } from "./player";
@@ -51,21 +51,21 @@ export default class Game {
       const cards = componentSet.cards;
       const tokens = componentSet.tokens;
       const nobles = componentSet.nobles;
-      const event = new GameCreatedEvent(playersCountOrEvents, tokens, nobles, cards);
+      const event = new GameCreated(playersCountOrEvents, tokens, nobles, cards);
 
       this.events.push(event);
-      this.handleCreatedGameEvent(event);
+      this.handleGameCreated(event);
     }
   }
 
   applyEvents(events: GameEvent[]) {
     events.forEach((event) => {
-      if (event instanceof GameCreatedEvent) {
-        this.handleCreatedGameEvent(event);
-      } else if (event instanceof TakeTokenEvent) {
-        this.handleTakeTokenEvent(event);
-      } else if (event instanceof ReturnTokenEvent) {
-        this.handleReturnTokenEvent(event);
+      if (event instanceof GameCreated) {
+        this.handleGameCreated(event);
+      } else if (event instanceof TokensTaken) {
+        this.handleTokensTaken(event);
+      } else if (event instanceof TokensReturned) {
+        this.handleTokensReturned(event);
       } else {
         throw new Error(`Unknown game event ${event}`);
       }
@@ -73,7 +73,7 @@ export default class Game {
     });
   }
 
-  handleCreatedGameEvent(event: GameCreatedEvent) {
+  handleGameCreated(event: GameCreated) {
     this.players = [...new Array(event.playersCount)].map(() => new Player());
     this.tokens = event.tokens;
     this.nobles = [...event.nobles];
@@ -142,14 +142,14 @@ export default class Game {
 
     // TODO: Logic for Gold / "Universal" tokens
 
-    const event = new TakeTokenEvent(player, tokens);
+    const event = new TokensTaken(player, tokens);
 
     this.events.push(event);
-    this.handleTakeTokenEvent(event);
+    this.handleTokensTaken(event);
   }
 
-  handleTakeTokenEvent(event: TakeTokenEvent) {
-    const player = this.players[event.player];
+  handleTokensTaken(event: TokensTaken) {
+    const player = this.players[event.playerId];
 
     player.tokens = player.tokens.add(event.tokens);
     this.tokens = this.tokens.subtract(event.tokens);
@@ -163,9 +163,9 @@ export default class Game {
     this.processPostActionNobles(player);
   }
 
-  returnTokens(playerIndex: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
+  returnTokens(playerId: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
     // Cannot take an action out of turn
-    if (this.currentPlayerIndex !== playerIndex) {
+    if (this.currentPlayerIndex !== playerId) {
       return new InvalidPlayOrder();
     }
 
@@ -175,19 +175,19 @@ export default class Game {
     }
 
     // Cannot return more tokens than would bring the player's total below ten
-    const player = this.players[playerIndex];
+    const player = this.players[playerId];
     if (player.tokens.subtract(tokens).size !== 10) {
       return new InvalidTokenReturn();
     }
 
-    const event = new ReturnTokenEvent(playerIndex, tokens);
+    const event = new TokensReturned(playerId, tokens);
 
     this.events.push(event);
-    this.handleReturnTokenEvent(event);
+    this.handleTokensReturned(event);
   }
 
-  handleReturnTokenEvent(event: ReturnTokenEvent) {
-    const player = this.players[event.player];
+  handleTokensReturned(event: TokensReturned) {
+    const player = this.players[event.playerId];
 
     player.tokens = player.tokens.subtract(event.tokens);
     this.tokens = this.tokens.add(event.tokens);

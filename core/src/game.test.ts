@@ -1,9 +1,9 @@
 import test, { beforeEach } from "node:test";
 import assert from "assert";
 import Game from "./game";
-import { GameCreatedEvent } from "./events/gamecreatedevent";
+import { GameCreated } from "./events/gamecreated";
 import { ComponentSetBuilder } from "./builders/componentsetbuilder";
-import { TakeTokenEvent } from "./events/taketoken";
+import { TokensTaken } from "./events/tokenstaken";
 import { MonetaryValue } from "./monetaryvalue";
 import { ComponentSet } from "./componentset";
 import { TurnState } from "./turnstate";
@@ -15,7 +15,7 @@ import {
   InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
-import { ReturnTokenEvent } from "./events/returntoken";
+import { TokensReturned } from "./events/tokensreturned";
 import { Noble } from "./noble";
 import { Card } from "./card";
 
@@ -66,7 +66,7 @@ test("Game", async (t) => {
         .withCardsCountEveryLevel(2)
         .withTokensCount(4)
         .build();
-      const event = new GameCreatedEvent(3, componentSet.tokens, componentSet.nobles, componentSet.cards);
+      const event = new GameCreated(3, componentSet.tokens, componentSet.nobles, componentSet.cards);
       const game = new Game([event]);
       // with game created event
       assert.equal(game.events.length, 1);
@@ -94,19 +94,19 @@ test("Game", async (t) => {
     });
   });
 
-  await t.test("handleTakeTokenEvent", async (t) => {
+  await t.test("handleTokensTaken", async (t) => {
     await t.test("removes tokens from the game stash and adds them to player's collection", () => {
       const gameTokens = new MonetaryValue().add("green", 2).add("red", 2).add("blue", 2);
       const takenTokens = new MonetaryValue().add("green", 1).add("red", 1).add("blue", 1);
 
       const game = new Game(1, new ComponentSet([], [], gameTokens));
       const player = game.players[0];
-      const event = new TakeTokenEvent(0, takenTokens);
+      const event = new TokensTaken(0, takenTokens);
 
       const expectedGameTokens = gameTokens.subtract(takenTokens);
       const expectedPlayerTokens = player.tokens.add(takenTokens);
 
-      game.handleTakeTokenEvent(event);
+      game.handleTokensTaken(event);
 
       assert.deepStrictEqual(expectedGameTokens.value, game.tokens.value);
       assert.deepStrictEqual(expectedPlayerTokens.value, player.tokens.value);
@@ -119,22 +119,22 @@ test("Game", async (t) => {
       const game = new Game(1, new ComponentSet([], [], gameTokens));
       const player = game.players[0];
       player.tokens = new MonetaryValue().add("green", 3).add("red", 5).add("blue", 2);
-      const event = new TakeTokenEvent(0, takenTokens);
+      const event = new TokensTaken(0, takenTokens);
 
       assert.equal(game.turnState, TurnState.Action);
 
-      game.handleTakeTokenEvent(event);
+      game.handleTokensTaken(event);
 
       assert.equal(game.turnState, TurnState.ReturnTokens);
     });
 
     await t.test("progresses to next player if the current player does not need to do anything else", () => {
       const game = new Game(2, new ComponentSet([], [], new MonetaryValue("green", 1)));
-      const event = new TakeTokenEvent(0, new MonetaryValue("green", 1));
+      const event = new TokensTaken(0, new MonetaryValue("green", 1));
 
       assert.equal(game.currentPlayerIndex, 0);
 
-      game.handleTakeTokenEvent(event);
+      game.handleTokensTaken(event);
 
       assert.equal(game.currentPlayerIndex, 1);
       assert.equal(game.turnState, TurnState.Action);
@@ -153,9 +153,9 @@ test("Game", async (t) => {
         new Card(1, 1, new MonetaryValue(), new MonetaryValue("blue", 1)),
       ];
 
-      const event = new TakeTokenEvent(0, new MonetaryValue("green", 1));
+      const event = new TokensTaken(0, new MonetaryValue("green", 1));
 
-      game.handleTakeTokenEvent(event);
+      game.handleTokensTaken(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 0);
       assert.deepStrictEqual(game.turnState, TurnState.SelectNoble);
@@ -168,9 +168,9 @@ test("Game", async (t) => {
       player.tokens = new MonetaryValue().add("green", 1);
       player.cards = [new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1))];
 
-      const event = new ReturnTokenEvent(0, new MonetaryValue("green", 1));
+      const event = new TokensReturned(0, new MonetaryValue("green", 1));
 
-      game.handleTakeTokenEvent(event);
+      game.handleTokensTaken(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
       assert.deepStrictEqual(game.turnState, TurnState.Action);
@@ -200,13 +200,13 @@ test("Game", async (t) => {
       const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 5)));
       game.takeTokens(0, new MonetaryValue().add("green", 2));
 
-      assertInstance(game.events[game.events.length - 1], TakeTokenEvent);
+      assertInstance(game.events[game.events.length - 1], TokensTaken);
     });
 
     await t.test("applies TakeTokenEvent", (t) => {
       const game = new Game(2, new ComponentSet([], [], new MonetaryValue().add("green", 5)));
       const handleTakeTokenEvent = t.mock.fn();
-      game.handleTakeTokenEvent = handleTakeTokenEvent;
+      game.handleTokensTaken = handleTakeTokenEvent;
       game.takeTokens(0, new MonetaryValue().add("green", 2));
 
       assert.equal(handleTakeTokenEvent.mock.callCount(), 1);
@@ -263,7 +263,7 @@ test("Game", async (t) => {
     });
   });
 
-  await t.test("handleReturnTokenEvent", async (t) => {
+  await t.test("handleTokensReturned", async (t) => {
     await t.test("removes tokens from the player's possession and returns them to player's collection", () => {
       const gameTokens = new MonetaryValue().add("green", 10).add("red", 10).add("blue", 10);
       const game = new Game(1, new ComponentSet([], [], gameTokens));
@@ -276,12 +276,12 @@ test("Game", async (t) => {
 
       const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
 
-      const event = new ReturnTokenEvent(0, returnedTokens);
+      const event = new TokensReturned(0, returnedTokens);
 
       const expectedGameTokens = game.tokens.add(returnedTokens);
       const expectedPlayerTokens = player.tokens.subtract(returnedTokens);
 
-      game.handleReturnTokenEvent(event);
+      game.handleTokensReturned(event);
 
       assert.deepStrictEqual(expectedGameTokens.value, game.tokens.value);
       assert.deepStrictEqual(expectedPlayerTokens.value, player.tokens.value);
@@ -292,9 +292,9 @@ test("Game", async (t) => {
       const player = game.players[0];
       player.tokens = new MonetaryValue().add("green", 13);
 
-      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+      const event = new TokensReturned(0, new MonetaryValue().add("green", 3));
 
-      game.handleReturnTokenEvent(event);
+      game.handleTokensReturned(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
       assert.deepStrictEqual(game.turnState, TurnState.Action);
@@ -313,9 +313,9 @@ test("Game", async (t) => {
         new Card(1, 1, new MonetaryValue(), new MonetaryValue("blue", 1)),
       ];
 
-      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+      const event = new TokensReturned(0, new MonetaryValue().add("green", 3));
 
-      game.handleReturnTokenEvent(event);
+      game.handleTokensReturned(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 0);
       assert.deepStrictEqual(game.turnState, TurnState.SelectNoble);
@@ -328,9 +328,9 @@ test("Game", async (t) => {
       player.tokens = new MonetaryValue().add("green", 13);
       player.cards = [new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1))];
 
-      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+      const event = new TokensReturned(0, new MonetaryValue().add("green", 3));
 
-      game.handleReturnTokenEvent(event);
+      game.handleTokensReturned(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
       assert.deepStrictEqual(game.turnState, TurnState.Action);
@@ -361,12 +361,12 @@ test("Game", async (t) => {
       const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
       game.returnTokens(0, returnedTokens);
 
-      assertInstance(game.events[game.events.length - 1], ReturnTokenEvent);
+      assertInstance(game.events[game.events.length - 1], TokensReturned);
     });
 
     await t.test("applies TokensReturned", (t) => {
       const handleTokensReturnedEvent = t.mock.fn();
-      game.handleReturnTokenEvent = handleTokensReturnedEvent;
+      game.handleTokensReturned = handleTokensReturnedEvent;
       game.returnTokens(0, new MonetaryValue().add("green", 1).add("red", 1));
 
       assert.equal(handleTokensReturnedEvent.mock.callCount(), 1);
