@@ -158,23 +158,7 @@ export default class Game {
       return;
     }
 
-    const eligibleNobles: [Noble, number][] = [];
-    this.nobles.forEach((noble, i) => {
-      if (player.cardPurchasingPower.contains(noble.cost)) {
-        eligibleNobles.push([noble, i]);
-      }
-    });
-
-    if (eligibleNobles.length === 0) {
-      this.advanceTurn();
-    } else if (eligibleNobles.length === 1) {
-      const [noble, index] = eligibleNobles[0];
-      this.nobles.splice(index, 1);
-      player.nobles.push(noble);
-      this.advanceTurn();
-    } else {
-      this.turnState = TurnState.SelectNoble;
-    }
+    this.processPostActionNobles(player);
   }
 
   returnTokens(playerIndex: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
@@ -205,12 +189,26 @@ export default class Game {
     player.tokens = player.tokens.subtract(event.tokens);
     this.tokens = this.tokens.add(event.tokens);
 
-    // TODO: End-of-turn noble logic
-    // This can happen if a player was previously eligible for multiple nobles,
-    // but because of the one-noble-per-turn restriction was not able to take them all
-    // on the same turn.
+    this.processPostActionNobles(player);
+  }
+
+  private advanceTurn() {
+    this.turnState = TurnState.Action;
+    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+  }
+
+  // Process end-of-action noble logic.
+  //
+  // TODO: Formalize turn flow lifecycle events like this into a more structured
+  // state-transition model.
+  //
+  // NOTE: Should this really accept a Player argument?
+  // Are any actions actually performed out of turn?
+  // Or can we just assume all actions are with respect to the current player?
+  private processPostActionNobles(player: Player) {
     const eligibleNobles: [Noble, number][] = [];
     this.nobles.forEach((noble, i) => {
+      // NOTE: Should the concept of being eligible for a noble be part of Player?
       if (player.cardPurchasingPower.contains(noble.cost)) {
         eligibleNobles.push([noble, i]);
       }
@@ -226,10 +224,5 @@ export default class Game {
     } else {
       this.turnState = TurnState.SelectNoble;
     }
-  }
-
-  private advanceTurn() {
-    this.turnState = TurnState.Action;
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
   }
 }
