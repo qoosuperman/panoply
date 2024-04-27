@@ -64,6 +64,8 @@ export default class Game {
         this.handleCreatedGameEvent(event);
       } else if (event instanceof TakeTokenEvent) {
         this.handleTakeTokenEvent(event);
+      } else if (event instanceof ReturnTokenEvent) {
+        this.handleReturnTokenEvent(event);
       } else {
         throw new Error(`Unknown game event ${event}`);
       }
