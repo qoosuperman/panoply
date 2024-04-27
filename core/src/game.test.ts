@@ -16,6 +16,7 @@ import {
 } from "./error";
 import { ReturnTokenEvent } from "./events/returntoken";
 import { Noble } from "./noble";
+import { Card } from "./card";
 
 test("Game", async (t) => {
   await t.test("constructor", async (t) => {
@@ -261,7 +262,43 @@ test("Game", async (t) => {
       game.handleReturnTokenEvent(event);
 
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
+      assert.deepStrictEqual(game.turnState, TurnState.Action);
     });
+
+    await t.test("adjusts turn state if multiple nobles are available", () => {
+      const nobles = [
+        new Noble(3, new MonetaryValue().add("green", 1)),
+        new Noble(2, new MonetaryValue().add("blue", 1)),
+      ];
+      const game = new Game(2, new ComponentSet([], nobles, new MonetaryValue().add("green", 1)));
+      const player = game.players[0];
+      player.tokens = new MonetaryValue().add("green", 13);
+      player.cards = [
+        new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1)),
+        new Card(1, 1, new MonetaryValue(), new MonetaryValue("blue", 1)),
+      ];
+
+      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+
+      game.handleReturnTokenEvent(event);
+
+      assert.deepStrictEqual(game.currentPlayerIndex, 0);
+      assert.deepStrictEqual(game.turnState, TurnState.SelectNoble);
+    });
+
+    await t.test("assigns noble and progresses to next player if only one noble is available", () => {
+      const nobles = [new Noble(3, new MonetaryValue().add("green", 1))];
+      const game = new Game(2, new ComponentSet([], nobles, new MonetaryValue().add("green", 1)));
+      const player = game.players[0];
+      player.tokens = new MonetaryValue().add("green", 13);
+      player.cards = [new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1))];
+
+      const event = new ReturnTokenEvent(0, new MonetaryValue().add("green", 3));
+
+      game.handleReturnTokenEvent(event);
+
+      assert.deepStrictEqual(game.currentPlayerIndex, 1);
+      assert.deepStrictEqual(game.turnState, TurnState.Action);
     });
   });
 });
