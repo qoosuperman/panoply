@@ -133,6 +133,43 @@ test("Game", async (t) => {
       assert.equal(game.currentPlayerIndex, 1);
       assert.equal(game.turnState, TurnState.Action);
     });
+
+    await t.test("adjusts turn state if multiple nobles are available and tokens are within limit", () => {
+      const nobles = [
+        new Noble(3, new MonetaryValue().add("green", 1)),
+        new Noble(2, new MonetaryValue().add("blue", 1)),
+      ];
+      const game = new Game(2, new ComponentSet([], nobles, new MonetaryValue().add("green", 1)));
+      const player = game.players[0];
+      player.tokens = new MonetaryValue().add("green", 1);
+      player.cards = [
+        new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1)),
+        new Card(1, 1, new MonetaryValue(), new MonetaryValue("blue", 1)),
+      ];
+
+      const event = new TakeTokenEvent(0, new MonetaryValue("green", 1));
+
+      game.handleTakeTokenEvent(event);
+
+      assert.deepStrictEqual(game.currentPlayerIndex, 0);
+      assert.deepStrictEqual(game.turnState, TurnState.SelectNoble);
+    });
+
+    await t.test("assigns noble and progresses to next player if only one noble is available", () => {
+      const nobles = [new Noble(3, new MonetaryValue().add("green", 1))];
+      const game = new Game(2, new ComponentSet([], nobles, new MonetaryValue().add("green", 1)));
+      const player = game.players[0];
+      player.tokens = new MonetaryValue().add("green", 1);
+      player.cards = [new Card(1, 1, new MonetaryValue(), new MonetaryValue("green", 1))];
+
+      const event = new ReturnTokenEvent(0, new MonetaryValue("green", 1));
+
+      game.handleTakeTokenEvent(event);
+
+      assert.deepStrictEqual(game.currentPlayerIndex, 1);
+      assert.deepStrictEqual(game.turnState, TurnState.Action);
+      assert.deepStrictEqual(game.players[0].nobles, [nobles[0]]);
+    });
   });
 
   await t.test("takeTokens", async (t) => {
@@ -299,6 +336,7 @@ test("Game", async (t) => {
 
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
       assert.deepStrictEqual(game.turnState, TurnState.Action);
+      assert.deepStrictEqual(game.players[0].nobles, [nobles[0]]);
     });
   });
 });

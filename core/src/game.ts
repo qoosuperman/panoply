@@ -155,12 +155,25 @@ export default class Game {
     // TODO: Generalize this limit with a RuleSet
     if (player.tokens.size > 10) {
       this.turnState = TurnState.ReturnTokens;
-    } else {
-      // TODO: End-of-turn noble logic
-      // This can happen if a player was previously eligible for multiple nobles,
-      // but because of the one-noble-per-turn restriction was not able to take them all
-      // on the same turn.
+      return;
+    }
+
+    const eligibleNobles: [Noble, number][] = [];
+    this.nobles.forEach((noble, i) => {
+      if (player.cardPurchasingPower.contains(noble.cost)) {
+        eligibleNobles.push([noble, i]);
+      }
+    });
+
+    if (eligibleNobles.length === 0) {
       this.advanceTurn();
+    } else if (eligibleNobles.length === 1) {
+      const [noble, index] = eligibleNobles[0];
+      this.nobles.splice(index, 1);
+      player.nobles.push(noble);
+      this.advanceTurn();
+    } else {
+      this.turnState = TurnState.SelectNoble;
     }
   }
 
