@@ -1,4 +1,4 @@
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 import assert from "assert";
 import Game from "./game";
 import { GameCreatedEvent } from "./events/gamecreatedevent";
@@ -12,6 +12,7 @@ import {
   InvalidMultiDrawToken,
   InvalidOverdrawToken,
   InvalidPlayOrder,
+  InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
 import { ReturnTokenEvent } from "./events/returntoken";
@@ -19,6 +20,11 @@ import { Noble } from "./noble";
 import { Card } from "./card";
 
 test("Game", async (t) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assertInstance = (instance: any, clazz: any) => {
+    assert.ok(instance instanceof clazz, `Expected instance of ${clazz.name}, but got ${instance?.constructor?.name}`);
+  };
+
   await t.test("constructor", async (t) => {
     await t.test("with playersCount and componentSet arguments", async () => {
       const playersCount = 4;
@@ -173,14 +179,6 @@ test("Game", async (t) => {
   });
 
   await t.test("takeTokens", async (t) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const assertInstance = (instance: any, clazz: any) => {
-      assert.ok(
-        instance instanceof clazz,
-        `Expected instance of ${clazz.name}, but got ${instance?.constructor?.name}`,
-      );
-    };
-
     await t.test("successfully performs a legal draw from different piles", () => {
       const game = new Game(
         2,
@@ -337,6 +335,67 @@ test("Game", async (t) => {
       assert.deepStrictEqual(game.currentPlayerIndex, 1);
       assert.deepStrictEqual(game.turnState, TurnState.Action);
       assert.deepStrictEqual(game.players[0].nobles, [nobles[0]]);
+    });
+  });
+
+  await t.test("returnTokens", async (t) => {
+    let game: Game;
+
+    beforeEach(() => {
+      const gameTokens = new MonetaryValue().add("green", 10).add("red", 10).add("blue", 10);
+      game = new Game(1, new ComponentSet([], [], gameTokens));
+
+      for (let i = 0; i < 4; i++) {
+        const takenTokens = new MonetaryValue().add("green", 1).add("red", 1).add("blue", 1);
+        game.takeTokens(0, takenTokens);
+      }
+    });
+
+    await t.test("successfully performs a legal return", () => {
+      const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
+      const result = game.returnTokens(0, returnedTokens);
+      assert.equal(result, undefined);
+    });
+
+    await t.test("generates a TokensReturned event", () => {
+      const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
+      game.returnTokens(0, returnedTokens);
+
+      assertInstance(game.events[game.events.length - 1], ReturnTokenEvent);
+    });
+
+    await t.test("applies TokensReturned", (t) => {
+      const handleTokensReturnedEvent = t.mock.fn();
+      game.handleReturnTokenEvent = handleTokensReturnedEvent;
+      game.returnTokens(0, new MonetaryValue().add("green", 1).add("red", 1));
+
+      assert.equal(handleTokensReturnedEvent.mock.callCount(), 1);
+    });
+
+    await t.test("throws error when playing out of turn", () => {
+      game.returnTokens(1, new MonetaryValue().add("green", 1).add("red", 1));
+      const result = game.takeTokens(1, new MonetaryValue("green", 1));
+
+      assertInstance(result, InvalidPlayOrder);
+    });
+
+    await t.test("throws error when taking invalid action", () => {
+      const returnedTokens = new MonetaryValue().add("green", 1).add("red", 1);
+      game.returnTokens(0, returnedTokens);
+      const result = game.returnTokens(0, returnedTokens);
+
+      assertInstance(result, InvalidTurnCommand);
+    });
+
+    await t.test("throws error when returning an invalid number of tokens", () => {
+      const fewReturnedTokens = new MonetaryValue().add("green", 1);
+      const manyReturnedTokens = new MonetaryValue().add("green", 1).add("red", 1).add("blue", 1);
+
+      const fewResult = game.returnTokens(0, fewReturnedTokens);
+      const manyResult = game.returnTokens(0, manyReturnedTokens);
+
+      assertInstance(fewResult, InvalidTokenReturn);
+      assertInstance(manyResult, InvalidTokenReturn);
     });
   });
 });

@@ -176,13 +176,14 @@ export default class Game {
 
     // Cannot return more tokens than would bring the player's total below ten
     const player = this.players[playerIndex];
-    if (player.tokens.subtract(tokens).size < 10) {
+    if (player.tokens.subtract(tokens).size !== 10) {
       return new InvalidTokenReturn();
     }
 
     const event = new ReturnTokenEvent(playerIndex, tokens);
 
     this.events.push(event);
+    this.handleReturnTokenEvent(event);
   }
 
   handleReturnTokenEvent(event: ReturnTokenEvent) {
