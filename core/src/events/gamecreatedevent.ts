@@ -3,7 +3,7 @@ import { MonetaryValue } from "../monetaryvalue";
 import { Noble } from "../noble";
 import { GameEvent } from "./gameevent";
 
-export class GameCreated extends GameEvent {
+export class GameCreatedEvent extends GameEvent {
   playersCount: number;
   tokens: MonetaryValue;
   nobles: Noble[];

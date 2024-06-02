@@ -9,5 +9,3 @@ export class InvalidDrawTokenAmount extends InvalidGameCommand {}
 export class InvalidOverdrawToken extends InvalidGameCommand {}
 
 export class InvalidTurnCommand extends InvalidGameCommand {}
-
-export class InvalidTokenReturn extends InvalidGameCommand {}
