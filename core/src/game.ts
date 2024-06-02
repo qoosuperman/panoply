@@ -7,11 +7,13 @@ import {
   InvalidMultiDrawToken,
   InvalidOverdrawToken,
   InvalidPlayOrder,
+  InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
-import { GameCreatedEvent } from "./events/gamecreatedevent";
+import { GameCreated } from "./events/gamecreated";
 import { GameEvent } from "./events/gameevent";
-import { TakeTokenEvent } from "./events/taketoken";
+import { TokensReturned } from "./events/tokensreturned";
+import { TokensTaken } from "./events/tokenstaken";
 import { MonetaryValue } from "./monetaryvalue";
 import { Noble } from "./noble";
 import { Player } from "./player";
@@ -49,19 +51,21 @@ export default class Game {
       const cards = componentSet.cards;
       const tokens = componentSet.tokens;
       const nobles = componentSet.nobles;
-      const event = new GameCreatedEvent(playersCountOrEvents, tokens, nobles, cards);
+      const event = new GameCreated(playersCountOrEvents, tokens, nobles, cards);
 
       this.events.push(event);
-      this.handleCreatedGameEvent(event);
+      this.handleGameCreated(event);
     }
   }
 
   applyEvents(events: GameEvent[]) {
     events.forEach((event) => {
-      if (event instanceof GameCreatedEvent) {
-        this.handleCreatedGameEvent(event);
-      } else if (event instanceof TakeTokenEvent) {
-        this.handleTakeTokenEvent(event);
+      if (event instanceof GameCreated) {
+        this.handleGameCreated(event);
+      } else if (event instanceof TokensTaken) {
+        this.handleTokensTaken(event);
+      } else if (event instanceof TokensReturned) {
+        this.handleTokensReturned(event);
       } else {
         throw new Error(`Unknown game event ${event}`);
       }
@@ -69,7 +73,7 @@ export default class Game {
     });
   }
 
-  handleCreatedGameEvent(event: GameCreatedEvent) {
+  handleGameCreated(event: GameCreated) {
     this.players = [...new Array(event.playersCount)].map(() => new Player());
     this.tokens = event.tokens;
     this.nobles = [...event.nobles];
@@ -138,14 +142,14 @@ export default class Game {
 
     // TODO: Logic for Gold / "Universal" tokens
 
-    const event = new TakeTokenEvent(player, tokens);
+    const event = new TokensTaken(player, tokens);
 
     this.events.push(event);
-    this.handleTakeTokenEvent(event);
+    this.handleTokensTaken(event);
   }
 
-  handleTakeTokenEvent(event: TakeTokenEvent) {
-    const player = this.players[event.player];
+  handleTokensTaken(event: TokensTaken) {
+    const player = this.players[event.playerId];
 
     player.tokens = player.tokens.add(event.tokens);
     this.tokens = this.tokens.subtract(event.tokens);
@@ -153,8 +157,75 @@ export default class Game {
     // TODO: Generalize this limit with a RuleSet
     if (player.tokens.size > 10) {
       this.turnState = TurnState.ReturnTokens;
+      return;
+    }
+
+    this.processPostActionNobles(player);
+  }
+
+  returnTokens(playerId: number, tokens: MonetaryValue): InvalidGameCommand | undefined {
+    // Cannot take an action out of turn
+    if (this.currentPlayerIndex !== playerId) {
+      return new InvalidPlayOrder();
+    }
+
+    // Cannot return tokens when it is not a return token phase
+    if (this.turnState !== TurnState.ReturnTokens) {
+      return new InvalidTurnCommand();
+    }
+
+    // Cannot return more tokens than would bring the player's total below ten
+    const player = this.players[playerId];
+    if (player.tokens.subtract(tokens).size !== 10) {
+      return new InvalidTokenReturn();
+    }
+
+    const event = new TokensReturned(playerId, tokens);
+
+    this.events.push(event);
+    this.handleTokensReturned(event);
+  }
+
+  handleTokensReturned(event: TokensReturned) {
+    const player = this.players[event.playerId];
+
+    player.tokens = player.tokens.subtract(event.tokens);
+    this.tokens = this.tokens.add(event.tokens);
+
+    this.processPostActionNobles(player);
+  }
+
+  private advanceTurn() {
+    this.turnState = TurnState.Action;
+    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+  }
+
+  // Process end-of-action noble logic.
+  //
+  // TODO: Formalize turn flow lifecycle events like this into a more structured
+  // state-transition model.
+  //
+  // NOTE: Should this really accept a Player argument?
+  // Are any actions actually performed out of turn?
+  // Or can we just assume all actions are with respect to the current player?
+  private processPostActionNobles(player: Player) {
+    const eligibleNobles: [Noble, number][] = [];
+    this.nobles.forEach((noble, i) => {
+      // NOTE: Should the concept of being eligible for a noble be part of Player?
+      if (player.cardPurchasingPower.contains(noble.cost)) {
+        eligibleNobles.push([noble, i]);
+      }
+    });
+
+    if (eligibleNobles.length === 0) {
+      this.advanceTurn();
+    } else if (eligibleNobles.length === 1) {
+      const [noble, index] = eligibleNobles[0];
+      this.nobles.splice(index, 1);
+      player.nobles.push(noble);
+      this.advanceTurn();
     } else {
-      this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+      this.turnState = TurnState.SelectNoble;
     }
   }
 }
