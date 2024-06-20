@@ -25,7 +25,7 @@ export class Deck {
     return this._cards.length;
   }
 
-  get first(): Card {
+  get first(): Card | undefined {
     return this._cards[this._cards.length - 1];
   }
 
