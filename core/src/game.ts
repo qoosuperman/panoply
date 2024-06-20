@@ -2,6 +2,8 @@ import { Card } from "./card";
 import { ComponentSet } from "./componentset";
 import { Deck } from "./deck";
 import {
+  ExceededReservedCardLimit,
+  InvalidCardReserve,
   InvalidDrawTokenAmount,
   InvalidGameCommand,
   InvalidMultiDrawToken,
@@ -10,11 +12,12 @@ import {
   InvalidTokenReturn,
   InvalidTurnCommand,
 } from "./error";
+import { FaceUpCardReserved } from "./events/faceupcardreserved";
 import { GameCreated } from "./events/gamecreated";
 import { GameEvent } from "./events/gameevent";
 import { TokensReturned } from "./events/tokensreturned";
 import { TokensTaken } from "./events/tokenstaken";
-import { MonetaryValue } from "./monetaryvalue";
+import { MonetaryColors, MonetaryValue } from "./monetaryvalue";
 import { Noble } from "./noble";
 import { Player } from "./player";
 import { TurnState } from "./turnstate";
@@ -194,6 +197,49 @@ export default class Game {
     this.tokens = this.tokens.add(event.tokens);
 
     this.processPostActionNobles(player);
+  }
+
+  reserveFaceUpCard(player: number, level: number, index: number): InvalidGameCommand | undefined {
+    // Cannot take an action out of turn
+    if (this.currentPlayerIndex !== player) {
+      return new InvalidPlayOrder();
+    }
+
+    // Cannot take an action when it is not an action phase
+    if (this.turnState !== TurnState.Action) {
+      return new InvalidTurnCommand();
+    }
+
+    const currentPlayer = this.players[player];
+    if (!currentPlayer.ableToReserveCard) {
+      return new ExceededReservedCardLimit();
+    }
+
+    // the card must exist
+    if (!this.faceUpCards[level - 1][index]) {
+      return new InvalidCardReserve();
+    }
+
+    const event = new FaceUpCardReserved(player, level, index);
+
+    this.events.push(event);
+    this.handleFaceUpCardReserved(event);
+  }
+
+  handleFaceUpCardReserved(event: FaceUpCardReserved) {
+    const player = this.players[event.player];
+
+    // If there is a gold token in the game, the player must take it
+    if (this.tokens.contains(new MonetaryValue(MonetaryColors.GOLD, 1))) {
+      this.tokens = this.tokens.subtract(MonetaryColors.GOLD, 1);
+      player.tokens = player.tokens.add(MonetaryColors.GOLD, 1);
+    }
+
+    // Replace the reserved card with a new card from the deck
+    const card = this.faceUpCards[event.level - 1][event.index] as Card;
+    this.faceUpCards[event.level - 1][event.index] = this.decks[event.level - 1].draw() as Card | undefined;
+
+    player.addReservedCard(card);
   }
 
   private advanceTurn() {

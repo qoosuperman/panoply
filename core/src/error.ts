@@ -11,3 +11,7 @@ export class InvalidOverdrawToken extends InvalidGameCommand {}
 export class InvalidTurnCommand extends InvalidGameCommand {}
 
 export class InvalidTokenReturn extends InvalidGameCommand {}
+
+export class ExceededReservedCardLimit extends InvalidGameCommand {}
+
+export class InvalidCardReserve extends InvalidGameCommand {}

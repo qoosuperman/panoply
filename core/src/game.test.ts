@@ -8,6 +8,8 @@ import { MonetaryValue } from "./monetaryvalue";
 import { ComponentSet } from "./componentset";
 import { TurnState } from "./turnstate";
 import {
+  ExceededReservedCardLimit,
+  InvalidCardReserve,
   InvalidDrawTokenAmount,
   InvalidMultiDrawToken,
   InvalidOverdrawToken,
@@ -18,6 +20,9 @@ import {
 import { TokensReturned } from "./events/tokensreturned";
 import { Noble } from "./noble";
 import { Card } from "./card";
+import { CardBuilder } from "./builders/cardbuilder";
+import { FaceUpCardReserved } from "./events/faceupcardreserved";
+import { Deck } from "./deck";
 
 test("Game", async (t) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -399,6 +404,123 @@ test("Game", async (t) => {
 
       assertInstance(fewResult, InvalidTokenReturn);
       assertInstance(manyResult, InvalidTokenReturn);
+    });
+  });
+
+  await t.test("handleReserveFaceUpCard", async (t) => {
+    let game: Game;
+
+    beforeEach(() => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+      game = new Game(4, componentSet);
+    });
+
+    await t.test("successfully reserves a card", () => {
+      const event = new FaceUpCardReserved(0, 1, 0);
+      game.handleFaceUpCardReserved(event);
+
+      assert.equal(game.players[0].reservedCards.length, 1);
+      // player get a gold token
+      assert.equal(game.players[0].tokens.value.get("gold"), 1);
+      assert.equal(game.decks[0].size, 0);
+      assertInstance(game.faceUpCards[0][0], Card);
+    });
+
+    await t.test("when there is no gold token available", () => {
+      game.tokens = game.tokens.subtract(new MonetaryValue("gold", 5));
+      const event = new FaceUpCardReserved(0, 1, 0);
+      game.handleFaceUpCardReserved(event);
+
+      assert.equal(game.players[0].reservedCards.length, 1);
+      assert.deepEqual(game.players[0].tokens, new MonetaryValue());
+    });
+
+    await t.test("when there no card left in the deck", () => {
+      game.decks[0] = new Deck();
+      const event = new FaceUpCardReserved(0, 1, 0);
+      game.handleFaceUpCardReserved(event);
+
+      assert.equal(game.players[0].reservedCards.length, 1);
+      assert.deepEqual(game.faceUpCards[0][0], undefined);
+    });
+  });
+
+  await t.test("reserveFaceUpCard", async (t) => {
+    await t.test("successfully reserves a card", () => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+
+      const game = new Game(4, componentSet);
+      // player with index 0 reserve a card which is level 1 and index 0
+      const result = game.reserveFaceUpCard(0, 1, 0);
+
+      assert.equal(result, undefined);
+    });
+
+    await t.test("throws error when drawing not in the player's turn", () => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+
+      const game = new Game(4, componentSet);
+      const result = game.reserveFaceUpCard(1, 1, 0);
+
+      assertInstance(result, InvalidPlayOrder);
+    });
+
+    await t.test("throws error when drawing at wrong turnState", () => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+
+      const game = new Game(4, componentSet);
+      game.turnState = TurnState.ReturnTokens;
+      const result = game.reserveFaceUpCard(0, 1, 0);
+
+      assertInstance(result, InvalidTurnCommand);
+    });
+
+    await t.test("throws error when user already has 3 reserved cards", () => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+
+      const game = new Game(4, componentSet);
+      const player = game.players[0];
+      for (let i = 0; i < 3; i++) {
+        const card = new CardBuilder().build();
+        player.addReservedCard(card);
+      }
+      const result = game.reserveFaceUpCard(0, 1, 0);
+
+      assertInstance(result, ExceededReservedCardLimit);
+    });
+
+    await t.test("throws error when the card does not exist", () => {
+      const componentSet = new ComponentSetBuilder()
+        .withNoblesCount(3)
+        .withCardsCountEveryLevel(5)
+        .withTokensCount(5)
+        .build();
+
+      const game = new Game(4, componentSet);
+      game.faceUpCards[0][0] = undefined;
+      const result = game.reserveFaceUpCard(0, 1, 0);
+
+      assertInstance(result, InvalidCardReserve);
     });
   });
 });
