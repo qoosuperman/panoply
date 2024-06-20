@@ -26,7 +26,7 @@ export default class Game {
 
   decks: Deck[] = [];
 
-  faceUpCards: Card[] = [];
+  faceUpCards: (Card | undefined)[][] = [[]];
 
   currentPlayerIndex: number = 0;
 
@@ -94,7 +94,8 @@ export default class Game {
       .sort(([levelA], [levelB]) => levelA - levelB)
       .map(([, deck]) => deck);
 
-    this.faceUpCards = this.decks.map((deck) => deck.draw(4)).filter((card) => card !== undefined) as Card[];
+    // 4 faceUpCards by each level
+    this.faceUpCards = this.decks.map((deck) => deck.draw(4) as Card[]);
   }
 
   takeTokens(player: number, tokens: MonetaryValue): InvalidGameCommand | undefined {

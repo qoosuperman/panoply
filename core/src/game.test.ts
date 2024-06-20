@@ -30,7 +30,7 @@ test("Game", async (t) => {
       const playersCount = 4;
       const componentSet = new ComponentSetBuilder()
         .withNoblesCount(3)
-        .withCardsCountEveryLevel(3)
+        .withCardsCountEveryLevel(5)
         .withTokensCount(5)
         .build();
 
@@ -44,9 +44,11 @@ test("Game", async (t) => {
         assert.equal(game.decks[i].first.level, i + 1);
       }
       // faceUpCards
+      assert.equal(game.faceUpCards.length, 3);
       for (let i = 0; i < game.faceUpCards.length; i++) {
-        assert.equal(game.faceUpCards[i].level, i + 1);
+        assert.equal(game.faceUpCards[i].length, 4);
       }
+
       // tokens
       const expectedTokens = new Map()
         .set("blue", 5)
@@ -63,7 +65,7 @@ test("Game", async (t) => {
     await t.test("with events argument", async () => {
       const componentSet = new ComponentSetBuilder()
         .withNoblesCount(2)
-        .withCardsCountEveryLevel(2)
+        .withCardsCountEveryLevel(6)
         .withTokensCount(4)
         .build();
       const event = new GameCreated(3, componentSet.tokens, componentSet.nobles, componentSet.cards);
@@ -77,8 +79,9 @@ test("Game", async (t) => {
         assert.equal(game.decks[i].first.level, i + 1);
       }
       // faceUpCards
+      assert.equal(game.faceUpCards.length, 3);
       for (let i = 0; i < game.faceUpCards.length; i++) {
-        assert.equal(game.faceUpCards[i].level, i + 1);
+        assert.equal(game.faceUpCards[i].length, 4);
       }
       // tokens
       const expectedTokens = new Map()
