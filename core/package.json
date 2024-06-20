@@ -6,6 +6,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc",
     "test": "pnpm build && node --test",
+    "test:only": "pnpm build && node --test --test-only",
     "start:dev": "nodemon src/index.ts --exec 'ts-node' -e ts",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
